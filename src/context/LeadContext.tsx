@@ -3,6 +3,7 @@ import type { Lead, FilterOptions, ViewMode } from '../types/lead';
 import { INITIAL_LEADS } from '../data/initialLeads';
 import { exportLeadsToExcel } from '../utils/excelUtils';
 import { getFollowUpStatus } from '../utils/dateUtils';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import confetti from 'canvas-confetti';
 
 interface LeadContextType {
@@ -29,6 +30,7 @@ interface LeadContextType {
   exportToExcel: () => void;
   resetToDefaultData: () => void;
   nichosDisponiveis: string[];
+  isCloudSynced: boolean;
 }
 
 const STORAGE_KEY = 'crm_prospeccao_vendas_leads_v1';
@@ -63,9 +65,59 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apenasFollowUpHojeOuAtrasado: false,
   });
 
+  // Salvar no LocalStorage como backup local
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
   }, [leads]);
+
+  // Carregar e Sincronizar em Tempo Real do Supabase se estiver configurado
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const client = supabase;
+    if (!client) return;
+
+    // 1. Carregar do Supabase
+    const fetchLeadsFromSupabase = async () => {
+      const { data, error } = await client
+        .from('leads')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar do Supabase:', error);
+      } else if (data && data.length > 0) {
+        setLeads(data as Lead[]);
+      }
+    };
+
+    fetchLeadsFromSupabase();
+
+    // 2. Inscrição para Realtime
+    const subscription = client
+      .channel('leads_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newLead = payload.new as Lead;
+            setLeads((prev) => [newLead, ...prev.filter((l) => l.id !== newLead.id)]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as Lead;
+            setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            setLeads((prev) => prev.filter((l) => l.id !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(subscription);
+    };
+  }, []);
 
   const nichosDisponiveis = Array.from(
     new Set(leads.map((l) => l.nicho).filter(Boolean))
@@ -102,7 +154,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   });
 
-  const addLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
     const newLead: Lead = {
       ...leadData,
@@ -110,33 +162,44 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: now,
       updatedAt: now,
     };
+
     setLeads((prev) => [newLead, ...prev]);
 
     if (newLead.status === 'fechado') {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('leads').insert([newLead]);
+    }
   };
 
-  const updateLead = (id: string, leadData: Partial<Lead>) => {
+  const updateLead = async (id: string, leadData: Partial<Lead>) => {
     const now = new Date().toISOString();
-    setLeads((prev) =>
-      prev.map((lead) => {
-        if (lead.id === id) {
-          const updated = { ...lead, ...leadData, updatedAt: now };
-          if (lead.status !== 'fechado' && updated.status === 'fechado') {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-          }
-          return updated;
-        }
-        return lead;
-      })
-    );
+    const targetLead = leads.find((l) => l.id === id);
+    if (!targetLead) return;
+
+    const updatedLead = { ...targetLead, ...leadData, updatedAt: now };
+
+    setLeads((prev) => prev.map((l) => (l.id === id ? updatedLead : l)));
+
+    if (targetLead.status !== 'fechado' && updatedLead.status === 'fechado') {
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('leads').update(leadData).eq('id', id);
+    }
   };
 
-  const deleteLead = (id: string) => {
+  const deleteLead = async (id: string) => {
     setLeads((prev) => prev.filter((lead) => lead.id !== id));
     if (selectedLead?.id === id) {
       setSelectedLead(null);
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('leads').delete().eq('id', id);
     }
   };
 
@@ -145,25 +208,24 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const incrementFollowUpAttempt = (id: string) => {
-    setLeads((prev) =>
-      prev.map((lead) => {
-        if (lead.id === id) {
-          return {
-            ...lead,
-            tentativasFollowUp: (lead.tentativasFollowUp || 0) + 1,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return lead;
-      })
-    );
+    const target = leads.find((l) => l.id === id);
+    if (target) {
+      updateLead(id, { tentativasFollowUp: (target.tentativasFollowUp || 0) + 1 });
+    }
   };
 
-  const importLeads = (newLeads: Lead[], replaceExisting: boolean) => {
+  const importLeads = async (newLeads: Lead[], replaceExisting: boolean) => {
     if (replaceExisting) {
       setLeads(newLeads);
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('leads').delete().neq('id', '0');
+        await supabase.from('leads').insert(newLeads);
+      }
     } else {
       setLeads((prev) => [...newLeads, ...prev]);
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('leads').insert(newLeads);
+      }
     }
   };
 
@@ -171,10 +233,14 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     exportLeadsToExcel(leads);
   };
 
-  const resetToDefaultData = () => {
+  const resetToDefaultData = async () => {
     if (window.confirm('Tem certeza que deseja restaurar os dados iniciais da planilha?')) {
       setLeads(INITIAL_LEADS);
       localStorage.removeItem(STORAGE_KEY);
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('leads').delete().neq('id', '0');
+        await supabase.from('leads').insert(INITIAL_LEADS);
+      }
     }
   };
 
@@ -204,6 +270,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         exportToExcel,
         resetToDefaultData,
         nichosDisponiveis,
+        isCloudSynced: isSupabaseConfigured,
       }}
     >
       {children}

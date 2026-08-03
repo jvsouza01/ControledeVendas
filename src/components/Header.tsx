@@ -10,6 +10,8 @@ import {
   RotateCcw,
   Search,
   Filter,
+  Cloud,
+  HardDrive,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
 
@@ -26,6 +28,7 @@ export const Header: React.FC = () => {
     resetToDefaultData,
     nichosDisponiveis,
     leads,
+    isCloudSynced,
   } = useLeads();
 
   const handleOpenAddModal = () => {
@@ -38,7 +41,6 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
-          {/* Logo & Título Apple/Notion */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
@@ -49,8 +51,16 @@ export const Header: React.FC = () => {
                   <h1 className="font-semibold text-sm text-slate-900 tracking-tight">
                     Prospecção & Vendas
                   </h1>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                    CRM
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 ${
+                      isCloudSynced
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                    title={isCloudSynced ? 'Sincronizado na Nuvem Supabase' : 'Modo Backup Local (LocalStorage)'}
+                  >
+                    {isCloudSynced ? <Cloud className="w-3 h-3 text-emerald-600" /> : <HardDrive className="w-3 h-3 text-slate-400" />}
+                    {isCloudSynced ? 'Nuvem Realtime' : 'Modo Local'}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500">
@@ -59,7 +69,6 @@ export const Header: React.FC = () => {
               </div>
             </div>
 
-            {/* View Switcher Mobile */}
             <div className="flex lg:hidden bg-slate-100 p-1 rounded-lg border border-slate-200">
               <button
                 onClick={() => setViewMode('kanban')}
@@ -85,7 +94,6 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Filtros e Busca Limpos */}
           <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -126,7 +134,6 @@ export const Header: React.FC = () => {
             </select>
           </div>
 
-          {/* Navegação Desktop */}
           <div className="flex items-center gap-2">
             <div className="hidden lg:flex bg-slate-100/80 p-1 rounded-lg border border-slate-200/80">
               <button
