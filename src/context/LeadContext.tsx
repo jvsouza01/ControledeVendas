@@ -77,17 +77,50 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const client = supabase;
     if (!client) return;
 
-    // 1. Carregar do Supabase
+    // 1. Carregar do Supabase e mesclar com dados locais sem perder nada
     const fetchLeadsFromSupabase = async () => {
-      const { data, error } = await client
-        .from('leads')
-        .select('*')
-        .order('createdAt', { ascending: false });
+      try {
+        const { data, error } = await client
+          .from('leads')
+          .select('*')
+          .order('createdAt', { ascending: false });
 
-      if (error) {
-        console.error('Erro ao buscar do Supabase:', error);
-      } else if (data && data.length > 0) {
-        setLeads(data as Lead[]);
+        if (error) {
+          console.error('Erro ao buscar do Supabase:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const cloudLeads = data as Lead[];
+          setLeads((prevLeads) => {
+            const cloudMap = new Map(cloudLeads.map((l) => [l.id, l]));
+            const merged = [...cloudLeads];
+
+            // Preserva e envia pro banco qualquer lead criado localmente que ainda não esteja na nuvem
+            for (const localLead of prevLeads) {
+              if (!cloudMap.has(localLead.id)) {
+                merged.unshift(localLead);
+                client.from('leads').insert([localLead]).then(({ error: insErr }) => {
+                  if (insErr) console.error('Erro ao enviar lead pendente para Supabase:', insErr);
+                });
+              } else {
+                const cloudLead = cloudMap.get(localLead.id)!;
+                const localTime = new Date(localLead.updatedAt || localLead.createdAt || 0).getTime();
+                const cloudTime = new Date(cloudLead.updatedAt || cloudLead.createdAt || 0).getTime();
+                if (localTime > cloudTime) {
+                  const idx = merged.findIndex((l) => l.id === localLead.id);
+                  if (idx !== -1) merged[idx] = localLead;
+                  client.from('leads').update(localLead).eq('id', localLead.id).then(({ error: upErr }) => {
+                    if (upErr) console.error('Erro ao atualizar lead pendente no Supabase:', upErr);
+                  });
+                }
+              }
+            }
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error('Exceção ao sincronizar com Supabase:', err);
       }
     };
 
@@ -170,7 +203,12 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('leads').insert([newLead]);
+      try {
+        const { error } = await supabase.from('leads').insert([newLead]);
+        if (error) console.error('Erro Supabase addLead:', error);
+      } catch (err) {
+        console.error('Erro na conexão do Supabase ao adicionar lead:', err);
+      }
     }
   };
 
@@ -188,7 +226,12 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('leads').update(leadData).eq('id', id);
+      try {
+        const { error } = await supabase.from('leads').update(updatedLead).eq('id', id);
+        if (error) console.error('Erro Supabase updateLead:', error);
+      } catch (err) {
+        console.error('Erro na conexão do Supabase ao atualizar lead:', err);
+      }
     }
   };
 
@@ -199,7 +242,12 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('leads').delete().eq('id', id);
+      try {
+        const { error } = await supabase.from('leads').delete().eq('id', id);
+        if (error) console.error('Erro Supabase deleteLead:', error);
+      } catch (err) {
+        console.error('Erro na conexão do Supabase ao deletar lead:', err);
+      }
     }
   };
 
@@ -218,13 +266,21 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (replaceExisting) {
       setLeads(newLeads);
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('leads').delete().neq('id', '0');
-        await supabase.from('leads').insert(newLeads);
+        try {
+          await supabase.from('leads').delete().neq('id', '0');
+          await supabase.from('leads').insert(newLeads);
+        } catch (err) {
+          console.error('Erro Supabase importLeads replace:', err);
+        }
       }
     } else {
       setLeads((prev) => [...newLeads, ...prev]);
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('leads').insert(newLeads);
+        try {
+          await supabase.from('leads').insert(newLeads);
+        } catch (err) {
+          console.error('Erro Supabase importLeads append:', err);
+        }
       }
     }
   };
@@ -234,12 +290,19 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetToDefaultData = async () => {
-    if (window.confirm('Tem certeza que deseja restaurar os dados iniciais da planilha?')) {
+    const input = window.prompt(
+      'ATENÇÃO: Esta ação apaga todos os seus dados e restaura a lista padrão.\n\nPara confirmar, digite "RESETAR" abaixo:'
+    );
+    if (input === 'RESETAR' || input === 'resetar') {
       setLeads(INITIAL_LEADS);
       localStorage.removeItem(STORAGE_KEY);
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('leads').delete().neq('id', '0');
-        await supabase.from('leads').insert(INITIAL_LEADS);
+        try {
+          await supabase.from('leads').delete().neq('id', '0');
+          await supabase.from('leads').insert(INITIAL_LEADS);
+        } catch (err) {
+          console.error('Erro Supabase resetToDefaultData:', err);
+        }
       }
     }
   };

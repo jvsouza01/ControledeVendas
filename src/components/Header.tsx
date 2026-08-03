@@ -190,8 +190,8 @@ export const Header: React.FC = () => {
               </button>
               <button
                 onClick={resetToDefaultData}
-                className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
-                title="Restaurar Planilha Inicial"
+                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                title="Restaurar Dados Padrão (ATENÇÃO: Requer confirmação)"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
