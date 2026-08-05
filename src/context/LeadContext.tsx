@@ -65,6 +65,43 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apenasFollowUpHojeOuAtrasado: false,
   });
 
+  // Detectar parâmetros de URL vindos do Bookmarklet 1-Clique do Instagram
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const instaHandle = params.get('instaHandle');
+    const instaName = params.get('instaName');
+
+    if (instaHandle) {
+      const cleanHandle = instaHandle.replace('@', '').trim();
+      const cleanName = instaName || cleanHandle.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+      setEditingLead({
+        id: '',
+        nome: cleanName,
+        instagram: cleanHandle,
+        nicho: 'Mentoria de Concursos',
+        comoEncontrei: 'Instagram Outbound (Bookmarklet)',
+        status: 'nao_contatado',
+        data1Contato: new Date().toISOString().split('T')[0],
+        respondeu: false,
+        data2Contato: '',
+        dataFollowUp: new Date().toISOString().split('T')[0],
+        tentativasFollowUp: 0,
+        dataReuniao: '',
+        reuniaoRealizada: false,
+        prioridade: 'media',
+        proximoPasso: 'Enviar Direct de apresentação da Trajetória',
+        observacoes: `Lead capturado via Bookmarklet 1-Clique do Instagram (@${cleanHandle}).`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setIsModalOpen(true);
+
+      // Limpar parâmetros da URL suavemente
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Salvar no LocalStorage como backup local
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useLeads } from '../context/LeadContext';
 import { getFollowUpStatus, formatDateBR } from '../utils/dateUtils';
-import { Bell, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Bell, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
+import { getGoogleCalendarUrl } from '../utils/calendarUtils';
 
 export const FollowUpAlertBanner: React.FC = () => {
   const { leads, setSelectedLead, filters, setFilters } = useLeads();
@@ -104,6 +105,15 @@ export const FollowUpAlertBanner: React.FC = () => {
                 >
                   {isAtrasado ? 'Atrasado' : 'Hoje'} ({formatDateBR(lead.dataFollowUp)})
                 </span>
+                <a
+                  href={getGoogleCalendarUrl(lead, 'followup')}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                  title="Agendar no Google Calendar"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                </a>
                 <a
                   href={`https://instagram.com/${lead.instagram.replace('@', '')}`}
                   target="_blank"

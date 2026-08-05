@@ -12,10 +12,13 @@ import {
   Filter,
   Cloud,
   HardDrive,
+  Zap,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
+import { InstagramCaptureModal } from './InstagramCaptureModal';
 
 export const Header: React.FC = () => {
+  const [isCaptureOpen, setIsCaptureOpen] = React.useState(false);
   const {
     viewMode,
     setViewMode,
@@ -198,6 +201,15 @@ export const Header: React.FC = () => {
             </div>
 
             <button
+              onClick={() => setIsCaptureOpen(true)}
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 border border-amber-400"
+              title="Captura Rápida de Mentorias no Instagram (Cole link ou use Bookmarklet)"
+            >
+              <Zap className="w-3.5 h-3.5 fill-current text-slate-950" />
+              <span className="hidden sm:inline">Capturar Insta</span>
+            </button>
+
+            <button
               onClick={handleOpenAddModal}
               className="bg-slate-900 hover:bg-slate-800 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
             >
@@ -208,6 +220,8 @@ export const Header: React.FC = () => {
 
         </div>
       </div>
+
+      <InstagramCaptureModal isOpen={isCaptureOpen} onClose={() => setIsCaptureOpen(false)} />
     </header>
   );
 };

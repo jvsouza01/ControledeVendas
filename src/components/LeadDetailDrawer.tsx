@@ -11,8 +11,10 @@ import {
   Edit2,
   Trash2,
   Clock,
+  Calendar,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
+import { getGoogleCalendarUrl } from '../utils/calendarUtils';
 
 export const LeadDetailDrawer: React.FC = () => {
   const { selectedLead, setSelectedLead, setEditingLead, setIsModalOpen, deleteLead, incrementFollowUpAttempt } = useLeads();
@@ -116,6 +118,30 @@ export const LeadDetailDrawer: React.FC = () => {
                 {selectedLead.dataFollowUp ? formatDateBR(selectedLead.dataFollowUp) : 'Não agendado'}
               </span>
             </div>
+
+            {selectedLead.dataFollowUp && (
+              <a
+                href={getGoogleCalendarUrl(selectedLead, 'followup')}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs shadow-2xs"
+              >
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                Agendar no Google Calendar
+              </a>
+            )}
+
+            {selectedLead.dataReuniao && (
+              <a
+                href={getGoogleCalendarUrl(selectedLead, 'reuniao')}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-1.5 px-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs shadow-2xs"
+              >
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                Agendar Demo ({formatDateBR(selectedLead.dataReuniao)}) no Google Calendar
+              </a>
+            )}
 
             {followStatus === 'hoje' && (
               <div className="p-2 bg-amber-50 text-amber-800 font-medium text-center rounded-lg border border-amber-200">
