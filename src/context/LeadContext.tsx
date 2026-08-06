@@ -75,8 +75,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cleanHandle = instaHandle.replace('@', '').trim();
       const cleanName = instaName || cleanHandle.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-      setEditingLead({
-        id: '',
+      addLead({
         nome: cleanName,
         instagram: cleanHandle,
         nicho: 'Mentoria de Concursos',
@@ -92,10 +91,8 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         prioridade: 'media',
         proximoPasso: 'Enviar Direct de apresentação da Trajetória',
         observacoes: `Lead capturado via Bookmarklet 1-Clique do Instagram (@${cleanHandle}).`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        valorProposta: 0,
       });
-      setIsModalOpen(true);
 
       // Limpar parâmetros da URL suavemente
       window.history.replaceState({}, document.title, window.location.pathname);

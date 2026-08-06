@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { setEditingLead, setIsModalOpen } = useLeads();
+  const { addLead } = useLeads();
   const [urlOrHandle, setUrlOrHandle] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -35,9 +35,8 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
       .replace(/[._]/g, ' ')
       .replace(/\b\w/g, (char) => char.toUpperCase());
 
-    // Abre o modal de lead pré-preenchido
-    setEditingLead({
-      id: '',
+    // Salva o lead diretamente no CRM (na coluna Não Contatado)
+    addLead({
       nome: formattedName,
       instagram: handle,
       nicho: 'Mentoria de Concursos',
@@ -53,13 +52,11 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
       prioridade: 'media',
       proximoPasso: 'Enviar Direct de apresentação da Trajetória',
       observacoes: `Lead capturado via Instagram (@${handle}).`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      valorProposta: 0,
     });
 
     setUrlOrHandle('');
     onClose();
-    setIsModalOpen(true);
   };
 
   // Código do Bookmarklet para a barra de favoritos do navegador
