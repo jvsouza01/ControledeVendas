@@ -82,10 +82,10 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden">
         
         {/* Cabeçalho */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md">
               <Zap className="w-5 h-5 text-amber-400" />
@@ -103,11 +103,11 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="p-6 space-y-6 text-xs text-slate-700">
+        <div className="p-6 space-y-6 text-xs text-slate-700 overflow-y-auto flex-1">
           
           {/* Método 1: Cole a URL / Handle */}
           <form onSubmit={handleQuickCapture} className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-            <label className="block font-semibold text-slate-900 flex items-center gap-1.5">
+            <label className="block font-semibold text-slate-900 flex items-center gap-1.5 text-xs">
               <InstagramIcon className="w-4 h-4 text-slate-700" />
               Opção 1: Cole a URL ou @handle do perfil
             </label>
@@ -122,31 +122,31 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <button
                 type="submit"
                 disabled={!urlOrHandle.trim()}
-                className="bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all shadow-xs"
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold disabled:opacity-50 px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all shadow-xs"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-current" />
                 Capturar
               </button>
             </div>
             <p className="text-[11px] text-slate-500">
-              O sistema extrai o @handle, formata o nome e abre o formulário pronto para você salvar com 1 clique!
+              O lead será adicionado <strong>instantaneamente</strong> na coluna <em>"Não Contatado"</em> do seu Kanban!
             </p>
           </form>
 
           {/* Método 2: Botão Favorito no Navegador (Bookmarklet) */}
           <div className="space-y-3 bg-amber-50/60 p-4 rounded-xl border border-amber-200/80">
             <div className="flex items-center justify-between">
-              <label className="font-semibold text-slate-900 flex items-center gap-1.5">
+              <label className="font-semibold text-slate-900 flex items-center gap-1.5 text-xs">
                 <Bookmark className="w-4 h-4 text-amber-600" />
-                Opção 2: Botão Mágico na Barra de Favoritos
+                Opção 2: Botão Favorito no Navegador
               </label>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">
-                1-Clique Total
+                1-Clique
               </span>
             </div>
 
             <p className="text-[11px] text-slate-600 leading-relaxed">
-              Arraste o botão abaixo para a sua <strong>Barra de Favoritos do navegador</strong>. Quando você estiver navegando no Instagram e achar um perfil de mentoria, basta clicar no favorito!
+              Arraste o botão abaixo para a sua <strong>Barra de Favoritos do navegador</strong>. Quando você estiver navegando em um perfil no Instagram, basta clicar no favorito!
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
@@ -170,14 +170,19 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
               </button>
             </div>
             
-            <div className="bg-white/80 p-2.5 rounded-lg border border-amber-200 text-[11px] text-slate-500">
-              💡 <strong>Dica de Instalação:</strong> No Chrome/Edge, pressione <kbd className="px-1 py-0.5 bg-slate-200 rounded text-[10px]">Ctrl + Shift + B</kbd> para exibir a Barra de Favoritos, e então arraste o botão <strong>"➕ Salvar na Trajetória"</strong> para lá!
+            <div className="bg-white/80 p-2.5 rounded-lg border border-amber-200 text-[11px] text-slate-500 space-y-1">
+              <p>💡 <strong>Como instalar no Chrome/Edge:</strong></p>
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>Pressione <kbd className="px-1 py-0.5 bg-slate-200 rounded text-[10px]">Ctrl + Shift + B</kbd> para mostrar a barra de favoritos.</li>
+                <li>Arraste o botão <strong>"➕ Salvar na Trajetória"</strong> para a barra.</li>
+                <li>No Instagram, abra a página do perfil da mentoria e clique no favorito!</li>
+              </ol>
             </div>
           </div>
 
         </div>
 
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+        <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-medium transition-colors"

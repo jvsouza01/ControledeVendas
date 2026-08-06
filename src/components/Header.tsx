@@ -19,6 +19,7 @@ import { InstagramCaptureModal } from './InstagramCaptureModal';
 
 export const Header: React.FC = () => {
   const [isCaptureOpen, setIsCaptureOpen] = React.useState(false);
+  const [quickInsta, setQuickInsta] = React.useState('');
   const {
     viewMode,
     setViewMode,
@@ -32,7 +33,42 @@ export const Header: React.FC = () => {
     nichosDisponiveis,
     leads,
     isCloudSynced,
+    addLead,
   } = useLeads();
+
+  const handleHeaderCapture = (e: React.FormEvent) => {
+    e.preventDefault();
+    let clean = quickInsta.trim();
+    if (!clean) return;
+    clean = clean.replace(/https?:\/\/(www\.)?instagram\.com\//i, '');
+    clean = clean.split('/')[0].split('?')[0].replace('@', '');
+    if (!clean) return;
+
+    const formattedName = clean
+      .replace(/[._]/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+    addLead({
+      nome: formattedName,
+      instagram: clean,
+      nicho: 'Mentoria de Concursos',
+      comoEncontrei: 'Instagram Outbound',
+      status: 'nao_contatado',
+      data1Contato: new Date().toISOString().split('T')[0],
+      respondeu: false,
+      data2Contato: '',
+      dataFollowUp: new Date().toISOString().split('T')[0],
+      tentativasFollowUp: 0,
+      dataReuniao: '',
+      reuniaoRealizada: false,
+      prioridade: 'media',
+      proximoPasso: 'Enviar Direct de apresentação da Trajetória',
+      observacoes: `Lead capturado via Instagram (@${clean}).`,
+      valorProposta: 0,
+    });
+
+    setQuickInsta('');
+  };
 
   const handleOpenAddModal = () => {
     setEditingLead(null);
@@ -200,18 +236,41 @@ export const Header: React.FC = () => {
               </button>
             </div>
 
+            {/* Campo de Captura Direta por Link / Handle */}
+            <form onSubmit={handleHeaderCapture} className="flex items-center gap-1.5 bg-amber-50/70 border border-amber-200/80 p-1 rounded-lg">
+              <div className="relative">
+                <InstagramIcon className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Cole @insta ou link..."
+                  value={quickInsta}
+                  onChange={(e) => setQuickInsta(e.target.value)}
+                  className="w-36 sm:w-44 bg-white border border-amber-200/80 focus:border-amber-400 rounded-md pl-8 pr-2 py-1 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!quickInsta.trim()}
+                className="bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-slate-950 font-bold px-2.5 py-1 rounded-md text-xs flex items-center gap-1 transition-all flex-shrink-0 border border-amber-400"
+                title="Capturar Lead do Instagram diretamente para a coluna Não Contatado"
+              >
+                <Zap className="w-3.5 h-3.5 fill-current text-slate-950" />
+                <span>+ Capturar</span>
+              </button>
+            </form>
+
             <button
               onClick={() => setIsCaptureOpen(true)}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 border border-amber-400"
-              title="Captura Rápida de Mentorias no Instagram (Cole link ou use Bookmarklet)"
+              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-xs flex items-center gap-1 transition-all border border-slate-200"
+              title="Ajuda / Botão 1-Clique na Barra de Favoritos (Bookmarklet)"
             >
-              <Zap className="w-3.5 h-3.5 fill-current text-slate-950" />
-              <span className="hidden sm:inline">Capturar Insta</span>
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-current" />
+              <span className="hidden xl:inline">Ajuda 1-Clique</span>
             </button>
 
             <button
               onClick={handleOpenAddModal}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 flex-shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Novo Lead</span>
