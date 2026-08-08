@@ -55,7 +55,8 @@ export function getDaysDifference(dateStr?: string, targetDateStr?: string): num
  */
 export function getFollowUpStatus(dataFollowUp?: string, statusLead?: string): 'hoje' | 'atrasado' | 'futuro' | 'sem_followup' {
   if (!dataFollowUp) return 'sem_followup';
-  if (statusLead === 'fechado' || statusLead === 'arquivado') return 'sem_followup';
+  // Leads não contatados ainda não precisam de follow-up — o follow-up começa após o 1º contato
+  if (statusLead === 'nao_contatado' || statusLead === 'fechado' || statusLead === 'arquivado') return 'sem_followup';
 
   const todayStr = getTodayString();
   const daysDiff = getDaysDifference(dataFollowUp, todayStr);
