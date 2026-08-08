@@ -9,12 +9,12 @@ export const FollowUpAlertBanner: React.FC = () => {
   const { leads, setSelectedLead, filters, setFilters } = useLeads();
 
   const urgentLeads = leads.filter((lead) => {
-    const status = getFollowUpStatus(lead.dataFollowUp, lead.status);
+    const status = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
     return status === 'hoje' || status === 'atrasado';
   });
 
-  const hojeCount = leads.filter(l => getFollowUpStatus(l.dataFollowUp, l.status) === 'hoje').length;
-  const atrasadosCount = leads.filter(l => getFollowUpStatus(l.dataFollowUp, l.status) === 'atrasado').length;
+  const hojeCount = leads.filter(l => getFollowUpStatus(l.dataFollowUp, l.status, l.data1Contato) === 'hoje').length;
+  const atrasadosCount = leads.filter(l => getFollowUpStatus(l.dataFollowUp, l.status, l.data1Contato) === 'atrasado').length;
 
   if (urgentLeads.length === 0) {
     return (
@@ -78,7 +78,7 @@ export const FollowUpAlertBanner: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-slate-100">
         {urgentLeads.slice(0, 3).map((lead) => {
-          const fStatus = getFollowUpStatus(lead.dataFollowUp, lead.status);
+          const fStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
           const isAtrasado = fStatus === 'atrasado';
           return (
             <div

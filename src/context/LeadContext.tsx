@@ -212,7 +212,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (filters.apenasFollowUpHojeOuAtrasado) {
-      const fStatus = getFollowUpStatus(lead.dataFollowUp, lead.status);
+      const fStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
       if (fStatus !== 'hoje' && fStatus !== 'atrasado') {
         return false;
       }

@@ -130,7 +130,7 @@ export const TableView: React.FC = () => {
             ) : (
               sortedLeads.map((lead) => {
                 const daysInfo = formatDaysAgoText(lead.data1Contato);
-                const followStatus = getFollowUpStatus(lead.dataFollowUp, lead.status);
+                const followStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
 
                 return (
                   <tr

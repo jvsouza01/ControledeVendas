@@ -52,24 +52,43 @@ export function getDaysDifference(dateStr?: string, targetDateStr?: string): num
  * 'atrasado': a data de follow-up passou e ainda não foi realizado
  * 'futuro': agendado para data futura
  * 'sem_followup': sem data agendada
+ *
+ * Regras automáticas:
+ * - 'nao_contatado', 'fechado', 'arquivado' → sem follow-up
+ * - 'contatado_aguardando' ou 'em_conversa' sem dataFollowUp:
+ *   calcula automaticamente pela data do 1º contato (3+ dias = atrasado)
  */
-export function getFollowUpStatus(dataFollowUp?: string, statusLead?: string): 'hoje' | 'atrasado' | 'futuro' | 'sem_followup' {
-  if (!dataFollowUp) return 'sem_followup';
-  // Leads não contatados ainda não precisam de follow-up — o follow-up começa após o 1º contato
-  if (statusLead === 'nao_contatado' || statusLead === 'fechado' || statusLead === 'arquivado') return 'sem_followup';
+export function getFollowUpStatus(
+  dataFollowUp?: string,
+  statusLead?: string,
+  data1Contato?: string
+): 'hoje' | 'atrasado' | 'futuro' | 'sem_followup' {
+  // Statuses que nunca geram alerta de follow-up
+  if (statusLead === 'nao_contatado' || statusLead === 'fechado' || statusLead === 'arquivado') {
+    return 'sem_followup';
+  }
 
   const todayStr = getTodayString();
-  const daysDiff = getDaysDifference(dataFollowUp, todayStr);
 
-  if (daysDiff === null) return 'sem_followup';
-
-  if (dataFollowUp === todayStr) {
-    return 'hoje';
-  } else if (dataFollowUp < todayStr) {
-    return 'atrasado';
-  } else {
+  // Se tem data de follow-up manual definida, usa ela
+  if (dataFollowUp) {
+    if (dataFollowUp === todayStr) return 'hoje';
+    if (dataFollowUp < todayStr) return 'atrasado';
     return 'futuro';
   }
+
+  // Follow-up automático para leads aguardando resposta ou em conversa sem data manual:
+  // Se passaram 3+ dias desde o 1º contato, considera atrasado
+  if (
+    (statusLead === 'contatado_aguardando' || statusLead === 'em_conversa') &&
+    data1Contato
+  ) {
+    const daysSinceContact = getDaysDifference(data1Contato);
+    if (daysSinceContact !== null && daysSinceContact >= 3) return 'atrasado';
+    if (daysSinceContact !== null && daysSinceContact > 0) return 'futuro';
+  }
+
+  return 'sem_followup';
 }
 
 /**

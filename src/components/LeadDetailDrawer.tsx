@@ -22,7 +22,7 @@ export const LeadDetailDrawer: React.FC = () => {
   if (!selectedLead) return null;
 
   const daysInfo = formatDaysAgoText(selectedLead.data1Contato);
-  const followStatus = getFollowUpStatus(selectedLead.dataFollowUp, selectedLead.status);
+  const followStatus = getFollowUpStatus(selectedLead.dataFollowUp, selectedLead.status, selectedLead.data1Contato);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-sm flex justify-end animate-fadeIn">

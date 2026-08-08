@@ -103,7 +103,7 @@ const KanbanCard: React.FC<{ lead: Lead }> = ({ lead }) => {
   const { setSelectedLead, setEditingLead, setIsModalOpen, updateLeadStatus, incrementFollowUpAttempt } = useLeads();
 
   const daysInfo = formatDaysAgoText(lead.data1Contato);
-  const followUpStatus = getFollowUpStatus(lead.dataFollowUp, lead.status);
+  const followUpStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
 
   const getPriorityBadge = (p: Lead['prioridade']) => {
     switch (p) {

@@ -26,8 +26,8 @@ export const MetricsDashboard: React.FC = () => {
   const fechados = leads.filter((l) => l.status === 'fechado');
   const valorTotalVendas = fechados.reduce((acc, l) => acc + (l.valorProposta || 0), 0);
 
-  const followUpHoje = leads.filter((l) => getFollowUpStatus(l.dataFollowUp, l.status) === 'hoje').length;
-  const followUpAtrasado = leads.filter((l) => getFollowUpStatus(l.dataFollowUp, l.status) === 'atrasado').length;
+  const followUpHoje = leads.filter((l) => getFollowUpStatus(l.dataFollowUp, l.status, l.data1Contato) === 'hoje').length;
+  const followUpAtrasado = leads.filter((l) => getFollowUpStatus(l.dataFollowUp, l.status, l.data1Contato) === 'atrasado').length;
 
   const nichosMap: Record<string, number> = {};
   leads.forEach((l) => {
