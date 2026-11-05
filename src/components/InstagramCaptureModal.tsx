@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLeads } from '../context/LeadContext';
 import { X, Sparkles, Copy, Check, Zap, CheckCircle2, ChevronRight } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
@@ -95,10 +96,10 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  return (
+  return createPortal(
     // Overlay: inset-0 sem flex, overflow-y-auto para permitir scroll quando necessário
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Centralizador: min-h-full com flex e py para garantir espaço no topo */}
@@ -219,6 +220,7 @@ export const InstagramCaptureModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

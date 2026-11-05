@@ -13,13 +13,19 @@ import {
   Cloud,
   HardDrive,
   Zap,
+  Target,
+  ShieldCheck,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
 import { InstagramCaptureModal } from './InstagramCaptureModal';
+import { DiscoveryHubModal } from './DiscoveryHubModal';
+import { getTodayString } from '../utils/dateUtils';
 
 export const Header: React.FC = () => {
   const [isCaptureOpen, setIsCaptureOpen] = React.useState(false);
+  const [isDiscoveryOpen, setIsDiscoveryOpen] = React.useState(false);
   const [quickInsta, setQuickInsta] = React.useState('');
+
   const {
     viewMode,
     setViewMode,
@@ -35,6 +41,13 @@ export const Header: React.FC = () => {
     isCloudSynced,
     addLead,
   } = useLeads();
+
+  // Guardrail Anti-Ban: Conta contatos realizados hoje (Meta diária: 5 contatos)
+  const todayStr = getTodayString();
+  const contatadosHoje = leads.filter(
+    (l) => l.data1Contato === todayStr || l.data2Contato === todayStr
+  ).length;
+  const limiteSeguro = 5;
 
   const handleHeaderCapture = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +75,7 @@ export const Header: React.FC = () => {
       dataReuniao: '',
       reuniaoRealizada: false,
       prioridade: 'media',
-      proximoPasso: 'Enviar Direct de apresentação da Trajetória',
+      proximoPasso: 'Enviar Direct de apresentação da Trajetória (Playbook)',
       observacoes: `Lead capturado via Instagram (@${clean}).`,
       valorProposta: 0,
     });
@@ -212,6 +225,21 @@ export const Header: React.FC = () => {
               </button>
             </div>
 
+            {/* Guardrail Anti-Ban Discreto: Meta diária de 5 contatos */}
+            <div
+              className={`hidden md:flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all ${
+                contatadosHoje >= limiteSeguro
+                  ? 'bg-rose-50 border-rose-300 text-rose-800'
+                  : contatadosHoje >= 4
+                  ? 'bg-amber-50 border-amber-300 text-amber-800'
+                  : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              }`}
+              title="Meta Diária de Abordagens Seguras (meta: 5/dia)"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Hoje: {contatadosHoje}/{limiteSeguro}</span>
+            </div>
+
             <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
               <button
                 onClick={() => setIsImportModalOpen(true)}
@@ -236,6 +264,16 @@ export const Header: React.FC = () => {
               </button>
             </div>
 
+            {/* Botão de Destaque Radar de Leads & Frutas Baixas */}
+            <button
+              onClick={() => setIsDiscoveryOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 flex-shrink-0"
+              title="Abrir Central de Dorks e Mineração de Frutas Baixas (Kiwify, Hotmart, Meta Ads)"
+            >
+              <Target className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">Radar de Leads</span>
+            </button>
+
             {/* Campo de Captura Direta por Link / Handle */}
             <form onSubmit={handleHeaderCapture} className="flex items-center gap-1.5 bg-amber-50/70 border border-amber-200/80 p-1 rounded-lg">
               <div className="relative">
@@ -245,7 +283,7 @@ export const Header: React.FC = () => {
                   placeholder="Cole @insta ou link..."
                   value={quickInsta}
                   onChange={(e) => setQuickInsta(e.target.value)}
-                  className="w-36 sm:w-44 bg-white border border-amber-200/80 focus:border-amber-400 rounded-md pl-8 pr-2 py-1 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                  className="w-32 sm:w-40 bg-white border border-amber-200/80 focus:border-amber-400 rounded-md pl-8 pr-2 py-1 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
                 />
               </div>
               <button
@@ -281,6 +319,7 @@ export const Header: React.FC = () => {
       </div>
 
       <InstagramCaptureModal isOpen={isCaptureOpen} onClose={() => setIsCaptureOpen(false)} />
+      <DiscoveryHubModal isOpen={isDiscoveryOpen} onClose={() => setIsDiscoveryOpen(false)} />
     </header>
   );
 };

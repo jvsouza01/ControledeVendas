@@ -35,21 +35,145 @@ interface LeadContextType {
 
 const STORAGE_KEY = 'crm_prospeccao_vendas_leads_v1';
 
+// Normalizador seguro de handle
+const normalizeHandle = (h?: string) => (h || '').replace(/[@\s]/g, '').trim().toLowerCase();
+
+// Blocklist de perfis famosos e dummy a serem eliminados INCONDICIONALMENTE
+const EXCLUDED_HANDLES = new Set([
+  'profexemplo',
+  'profbrunobezerra',
+  'professora_fabianafirmino',
+  'profarthurlima',
+  'professorafernandabarboza',
+  'professorannunciato',
+  'portuguesparadesesperados',
+  'professorfelippeloureiro',
+  'fabianopereiraprof',
+  'mateusandrade.me',
+  'concursopmoficial',
+]);
+
+const isExcludedLead = (l: { instagram?: string; nome?: string }): boolean => {
+  const handle = normalizeHandle(l.instagram);
+  const name = (l.nome || '').trim().toLowerCase();
+  if (EXCLUDED_HANDLES.has(handle)) return true;
+  if (handle === 'profexemplo' || handle.includes('profexemplo')) return true;
+  if (name === 'prof fulano' || name === 'prof. fulano' || name.includes('prof fulano')) return true;
+  return false;
+};
+
+const getMergedInitialLeads = (): Lead[] => {
+  const initialFbLeads = INITIAL_LEADS.filter(
+    (l) => l.id.startsWith('fb_') && !isExcludedLead(l)
+  );
+  const initialOtherLeads = INITIAL_LEADS.filter(
+    (l) => !l.id.startsWith('fb_') && !isExcludedLead(l)
+  );
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) {
+    const merged = [...initialFbLeads, ...initialOtherLeads];
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    } catch (e) {
+      console.error('Erro ao salvar inicial no localStorage:', e);
+    }
+    return merged;
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      const merged = [...initialFbLeads, ...initialOtherLeads];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+
+    // 1. Filtrar INCONDICIONALMENTE qualquer lead excluído (mesmo que com status alterado ou dataFollowUp)
+    const cleanedSaved: Lead[] = parsed
+      .filter((l: Lead) => !isExcludedLead(l))
+      .map((l: Lead) => {
+        if (l.instagram && l.instagram.includes(' ')) {
+          return { ...l, instagram: l.instagram.replace(/\s+/g, '') };
+        }
+        return l;
+      });
+
+    const savedMapById = new Map(cleanedSaved.map((l: Lead) => [l.id, l]));
+    const savedMapByHandle = new Map(
+      cleanedSaved.map((l: Lead) => [normalizeHandle(l.instagram), l])
+    );
+
+    // 2. Fazer upsert de todos os fb_ de INITIAL_LEADS (preservando alterações que o usuário fez em fb_)
+    const minedLeads: Lead[] = initialFbLeads.map((initFb) => {
+      const existingById = savedMapById.get(initFb.id);
+      const existingByHandle = savedMapByHandle.get(normalizeHandle(initFb.instagram));
+      const existing = existingById || existingByHandle;
+      if (existing) {
+        return { ...initFb, ...existing };
+      }
+      return initFb;
+    });
+
+    const minedIds = new Set(minedLeads.map((l) => l.id));
+    const minedHandles = new Set(minedLeads.map((l) => normalizeHandle(l.instagram)));
+
+    // 3. Leads do próprio usuário (que não são fb_ e não colidem com fb_)
+    const userLeads = cleanedSaved.filter((l: Lead) => {
+      if (l.id.startsWith('fb_') || minedIds.has(l.id)) return false;
+      const handle = normalizeHandle(l.instagram);
+      if (handle && minedHandles.has(handle)) return false;
+      return true;
+    });
+
+    // 4. Leads base não-fb de INITIAL_LEADS não vistos ainda (evita key duplication)
+    const userIds = new Set(userLeads.map((l) => l.id));
+    const userHandles = new Set(userLeads.map((l) => normalizeHandle(l.instagram)));
+    const remainingInitialOther = initialOtherLeads.filter(
+      (l) =>
+        !userIds.has(l.id) &&
+        !minedIds.has(l.id) &&
+        !userHandles.has(normalizeHandle(l.instagram)) &&
+        !minedHandles.has(normalizeHandle(l.instagram))
+    );
+
+    // Colocar os leads minerados (fb_) NO TOPO DO ARRAY
+    const merged = [...minedLeads, ...userLeads, ...remainingInitialOther];
+
+    // Deduplicação estrita final por ID para garantir 100% de unicidade de key no React
+    const seenFinalIds = new Set<string>();
+    const uniqueMerged: Lead[] = [];
+    for (const item of merged) {
+      if (!seenFinalIds.has(item.id)) {
+        seenFinalIds.add(item.id);
+        uniqueMerged.push(item);
+      }
+    }
+
+    // Salvar imediatamente no localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(uniqueMerged));
+
+    return uniqueMerged;
+  } catch (e) {
+    console.error('Erro ao ler e mesclar localStorage', e);
+    const merged = [...initialFbLeads, ...initialOtherLeads];
+    const seenFinalIds = new Set<string>();
+    const uniqueMerged: Lead[] = [];
+    for (const item of merged) {
+      if (!seenFinalIds.has(item.id)) {
+        seenFinalIds.add(item.id);
+        uniqueMerged.push(item);
+      }
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(uniqueMerged));
+    return uniqueMerged;
+  }
+};
+
 const LeadContext = createContext<LeadContextType | undefined>(undefined);
 
 export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [leads, setLeads] = useState<Lead[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error('Erro ao ler localStorage', e);
-      }
-    }
-    return INITIAL_LEADS;
-  });
+  const [leads, setLeads] = useState<Lead[]>(() => getMergedInitialLeads());
 
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -63,6 +187,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     status: 'todos',
     prioridade: 'todas',
     apenasFollowUpHojeOuAtrasado: false,
+    origemTipo: 'todos',
   });
 
   // Detectar parâmetros de URL vindos do Bookmarklet 1-Clique do Instagram
@@ -120,18 +245,19 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .order('createdAt', { ascending: false });
 
         if (error) {
-          console.error('Erro ao buscar do Supabase:', error);
+          console.warn('[Supabase] Nuvem offline ou em pausa. Operando no modo local com backup.', error.message);
           return;
         }
 
         if (data && data.length > 0) {
-          const cloudLeads = data as Lead[];
+          const cloudLeads = (data as Lead[]).filter((l) => !isExcludedLead(l));
           setLeads((prevLeads) => {
             const cloudMap = new Map(cloudLeads.map((l) => [l.id, l]));
             const merged = [...cloudLeads];
 
             // Preserva e envia pro banco qualquer lead criado localmente que ainda não esteja na nuvem
             for (const localLead of prevLeads) {
+              if (isExcludedLead(localLead)) continue;
               if (!cloudMap.has(localLead.id)) {
                 merged.unshift(localLead);
                 client.from('leads').insert([localLead]).then(({ error: insErr }) => {
@@ -150,11 +276,31 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               }
             }
-            return merged;
+
+            // GARANTIA ABSOLUTA: Nenhum lead fb_ de INITIAL_LEADS pode ser perdido se o Supabase falhar ou estiver incompleto
+            const mergedIds = new Set(merged.map((l) => l.id));
+            const initialFbLeads = INITIAL_LEADS.filter(
+              (l) => l.id.startsWith('fb_') && !isExcludedLead(l)
+            );
+            for (const initFb of initialFbLeads) {
+              if (!mergedIds.has(initFb.id)) {
+                merged.push(initFb);
+                mergedIds.add(initFb.id);
+                client.from('leads').insert([initFb]).then(() => {});
+              }
+            }
+
+            // Manter os fb_ minerados NO TOPO DO ARRAY
+            const mined = merged.filter((l) => l.id.startsWith('fb_') && !isExcludedLead(l));
+            const others = merged.filter((l) => !l.id.startsWith('fb_') && !isExcludedLead(l));
+            const finalMerged = [...mined, ...others];
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(finalMerged));
+            return finalMerged;
           });
         }
-      } catch (err) {
-        console.error('Exceção ao sincronizar com Supabase:', err);
+      } catch (err: any) {
+        console.warn('[Supabase] Falha de rede com a nuvem Supabase. Operando em modo offline resiliente.');
       }
     };
 
@@ -169,10 +315,16 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newLead = payload.new as Lead;
-            setLeads((prev) => [newLead, ...prev.filter((l) => l.id !== newLead.id)]);
+            if (!isExcludedLead(newLead)) {
+              setLeads((prev) => [newLead, ...prev.filter((l) => l.id !== newLead.id)]);
+            }
           } else if (payload.eventType === 'UPDATE') {
             const updated = payload.new as Lead;
-            setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+            if (!isExcludedLead(updated)) {
+              setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+            } else {
+              setLeads((prev) => prev.filter((l) => l.id !== updated.id));
+            }
           } else if (payload.eventType === 'DELETE') {
             const deletedId = payload.old.id;
             setLeads((prev) => prev.filter((l) => l.id !== deletedId));
@@ -191,11 +343,24 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ).sort();
 
   const filteredLeads = leads.filter((lead) => {
+    // Salvaguarda: nunca permitir que leads excluídos vazem para as telas
+    if (isExcludedLead(lead)) {
+      return false;
+    }
+
+    // Filtro por origem: Todos | Novos Minerados | Meus Cadastrados
+    if (filters.origemTipo === 'minerados' && !lead.id.startsWith('fb_')) {
+      return false;
+    }
+    if (filters.origemTipo === 'cadastrados' && lead.id.startsWith('fb_')) {
+      return false;
+    }
+
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      const matchNome = lead.nome.toLowerCase().includes(q);
-      const matchInsta = lead.instagram.toLowerCase().includes(q);
-      const matchObs = lead.observacoes.toLowerCase().includes(q);
+      const matchNome = (lead.nome || '').toLowerCase().includes(q);
+      const matchInsta = (lead.instagram || '').toLowerCase().includes(q);
+      const matchObs = (lead.observacoes || '').toLowerCase().includes(q);
       if (!matchNome && !matchInsta && !matchObs) return false;
     }
 
@@ -254,6 +419,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedLead = { ...targetLead, ...leadData, updatedAt: now };
 
     setLeads((prev) => prev.map((l) => (l.id === id ? updatedLead : l)));
+    setSelectedLead((prev) => (prev && prev.id === id ? updatedLead : prev));
 
     if (targetLead.status !== 'fechado' && updatedLead.status === 'fechado') {
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
@@ -328,12 +494,20 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
       'ATENÇÃO: Esta ação apaga todos os seus dados e restaura a lista padrão.\n\nPara confirmar, digite "RESETAR" abaixo:'
     );
     if (input === 'RESETAR' || input === 'resetar') {
-      setLeads(INITIAL_LEADS);
-      localStorage.removeItem(STORAGE_KEY);
+      const initialFbLeads = INITIAL_LEADS.filter(
+        (l) => l.id.startsWith('fb_') && !isExcludedLead(l)
+      );
+      const initialOtherLeads = INITIAL_LEADS.filter(
+        (l) => !l.id.startsWith('fb_') && !isExcludedLead(l)
+      );
+      const cleanDefaults = [...initialFbLeads, ...initialOtherLeads];
+
+      setLeads(cleanDefaults);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanDefaults));
       if (isSupabaseConfigured && supabase) {
         try {
           await supabase.from('leads').delete().neq('id', '0');
-          await supabase.from('leads').insert(INITIAL_LEADS);
+          await supabase.from('leads').insert(cleanDefaults);
         } catch (err) {
           console.error('Erro Supabase resetToDefaultData:', err);
         }

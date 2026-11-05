@@ -5,6 +5,8 @@ import {
   formatDateBR,
   formatDaysAgoText,
   getFollowUpStatus,
+  getTodayString,
+  addDaysToDate,
 } from '../utils/dateUtils';
 import {
   Edit2,
@@ -13,6 +15,10 @@ import {
   ArrowUpDown,
   CheckCircle,
   XCircle,
+  CheckCircle2,
+  RefreshCw,
+  MessageCircle,
+  Sparkles,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
 
@@ -43,10 +49,43 @@ export const TableView: React.FC = () => {
     return 0;
   });
 
+  const handleMarkContatado = (leadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const today = getTodayString();
+    const nextFollow = addDaysToDate(3);
+    updateLead(leadId, {
+      status: 'contatado_aguardando',
+      data1Contato: today,
+      dataFollowUp: nextFollow,
+      proximoPasso: 'Fazer 1º Follow-up no Direct/WhatsApp',
+    });
+  };
+
+  const handleFollowUpFeito = (lead: Lead, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const today = getTodayString();
+    const nextFollow = addDaysToDate(4);
+    updateLead(lead.id, {
+      tentativasFollowUp: (lead.tentativasFollowUp || 0) + 1,
+      data2Contato: today,
+      dataFollowUp: nextFollow,
+      proximoPasso: 'Aguardando resposta do Follow-up',
+    });
+  };
+
+  const handleRespondeu = (leadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateLead(leadId, {
+      status: 'em_conversa',
+      respondeu: true,
+      proximoPasso: 'Desenvolver conversa / sondar dores da plataforma',
+    });
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs text-slate-700 border-collapse min-w-[1200px]">
+        <table className="w-full text-left text-xs text-slate-700 border-collapse min-w-[1250px]">
           <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
             <tr>
               <th className="py-3.5 px-4 cursor-pointer hover:text-slate-900" onClick={() => handleSort('nome')}>
@@ -77,15 +116,19 @@ export const TableView: React.FC = () => {
                 </div>
               </th>
 
+              <th className="py-3.5 px-4 text-center">
+                <span>Ação Rápida 1-Clique</span>
+              </th>
+
               <th className="py-3.5 px-4 cursor-pointer hover:text-slate-900" onClick={() => handleSort('data1Contato')}>
                 <div className="flex items-center gap-1">
-                  <span>Data 1º Contato</span>
+                  <span>1º Contato</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
 
               <th className="py-3.5 px-4 text-center">
-                <span>Tempo Decorrido</span>
+                <span>Tempo</span>
               </th>
 
               <th className="py-3.5 px-4 text-center cursor-pointer hover:text-slate-900" onClick={() => handleSort('respondeu')}>
@@ -110,10 +153,6 @@ export const TableView: React.FC = () => {
                 </div>
               </th>
 
-              <th className="py-3.5 px-4">
-                <span>Próximo Passo / Obs</span>
-              </th>
-
               <th className="py-3.5 px-4 text-right">
                 <span>Ações</span>
               </th>
@@ -131,36 +170,56 @@ export const TableView: React.FC = () => {
               sortedLeads.map((lead) => {
                 const daysInfo = formatDaysAgoText(lead.data1Contato);
                 const followStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
+                const cleanHandle = (lead.instagram || '').replace('@', '').trim();
 
                 return (
                   <tr
                     key={lead.id}
-                    className="hover:bg-slate-50/70 transition-colors"
+                    onClick={() => setSelectedLead(lead)}
+                    className="hover:bg-slate-50/70 transition-colors cursor-pointer"
                   >
-                    <td className="py-3 px-4 font-semibold text-slate-900">
-                      <button
-                        onClick={() => setSelectedLead(lead)}
-                        className="hover:text-slate-600 text-left font-semibold"
-                      >
-                        {lead.nome || 'Lead sem nome'}
-                      </button>
+                    <td className="py-3 px-4 font-semibold text-slate-900 max-w-[220px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate font-semibold hover:text-indigo-600 transition-colors">
+                          {lead.nome || cleanHandle || 'Lead sem nome'}
+                        </span>
+                        {lead.id.startsWith('fb_') && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shadow-2xs flex-shrink-0">
+                            <Sparkles className="w-2.5 h-2.5 text-emerald-600 animate-pulse" />
+                            ✨ NOVO MINERADO
+                          </span>
+                        )}
+                      </div>
                       {lead.comoEncontrei && (
-                        <div className="text-[10px] text-slate-400 font-normal">{lead.comoEncontrei}</div>
+                        <div className="text-[10px] text-slate-400 font-normal truncate" title={lead.comoEncontrei}>
+                          {lead.comoEncontrei}
+                        </div>
                       )}
                     </td>
 
                     <td className="py-3 px-4">
-                      {lead.instagram ? (
-                        <a
-                          href={`https://instagram.com/${lead.instagram.replace('@', '')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-slate-900 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200"
-                        >
-                          <InstagramIcon className="w-3 h-3 text-slate-400" />
-                          @{lead.instagram.replace('@', '')}
-                          <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
-                        </a>
+                      {cleanHandle ? (
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <a
+                            href={`https://instagram.com/${cleanHandle}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-medium text-slate-700 hover:text-slate-900 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200 transition-colors"
+                          >
+                            <InstagramIcon className="w-3 h-3 text-slate-400" />
+                            @{cleanHandle}
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
+                          </a>
+                          <a
+                            href={`https://ig.me/m/${cleanHandle}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded font-medium border border-indigo-100"
+                            title="Direct ✉️"
+                          >
+                            Direct
+                          </a>
+                        </div>
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}
@@ -176,7 +235,7 @@ export const TableView: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={lead.status}
                         onChange={(e) => updateLeadStatus(lead.id, e.target.value as LeadStatus)}
@@ -192,6 +251,45 @@ export const TableView: React.FC = () => {
                       </select>
                     </td>
 
+                    {/* Ação Rápida 1-Clique na Tabela */}
+                    <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      {lead.status === 'nao_contatado' && (
+                        <button
+                          onClick={(e) => handleMarkContatado(lead.id, e)}
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold inline-flex items-center gap-1 transition-all shadow-2xs"
+                          title="Marcar como Contatado e Agendar Follow-up para +3 dias"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Contatei (+3d)</span>
+                        </button>
+                      )}
+
+                      {lead.status === 'contatado_aguardando' && (
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={(e) => handleFollowUpFeito(lead, e)}
+                            className="px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded text-[10px] font-semibold flex items-center gap-1"
+                            title="+1 Follow-up (+4d)"
+                          >
+                            <RefreshCw className="w-2.5 h-2.5 text-amber-700" />
+                            <span>+4d</span>
+                          </button>
+                          <button
+                            onClick={(e) => handleRespondeu(lead.id, e)}
+                            className="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold flex items-center gap-1"
+                            title="Respondeu!"
+                          >
+                            <MessageCircle className="w-2.5 h-2.5" />
+                            <span>Respondeu</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {lead.status !== 'nao_contatado' && lead.status !== 'contatado_aguardando' && (
+                        <span className="text-[10px] text-slate-400">Em andamento</span>
+                      )}
+                    </td>
+
                     <td className="py-3 px-4 font-mono text-slate-600">
                       {formatDateBR(lead.data1Contato)}
                     </td>
@@ -200,7 +298,7 @@ export const TableView: React.FC = () => {
                       {daysInfo.text}
                     </td>
 
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => updateLead(lead.id, { respondeu: !lead.respondeu })}
                         className={`p-1 rounded transition-colors ${
@@ -223,9 +321,9 @@ export const TableView: React.FC = () => {
                         <span
                           className={`font-mono text-xs px-2 py-0.5 rounded ${
                             followStatus === 'hoje'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200 font-semibold'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold animate-pulse'
                               : followStatus === 'atrasado'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200 font-semibold'
+                              ? 'bg-rose-100 text-rose-900 border border-rose-300 font-bold'
                               : 'text-slate-600 bg-slate-100 border border-slate-200'
                           }`}
                         >
@@ -252,13 +350,7 @@ export const TableView: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="py-3 px-4 max-w-[220px]">
-                      <div className="truncate text-slate-600" title={lead.proximoPasso || lead.observacoes}>
-                        {lead.proximoPasso || lead.observacoes || <span className="text-slate-400">-</span>}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4 text-right space-x-1">
+                    <td className="py-3 px-4 text-right space-x-1" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => {
                           setEditingLead(lead);

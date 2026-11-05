@@ -39,4 +39,5 @@ export interface FilterOptions {
   status: string;
   prioridade: string;
   apenasFollowUpHojeOuAtrasado: boolean;
+  origemTipo?: 'todos' | 'minerados' | 'cadastrados';
 }

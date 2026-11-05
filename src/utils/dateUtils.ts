@@ -22,6 +22,29 @@ export function getTodayString(): string {
 }
 
 /**
+ * Adiciona X dias a uma data base (ou Hoje se omitido) e retorna no formato YYYY-MM-DD
+ */
+export function addDaysToDate(days: number, baseDateStr?: string): string {
+  let date: Date;
+  if (baseDateStr) {
+    const parts = baseDateStr.split('-');
+    if (parts.length === 3) {
+      date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    } else {
+      date = new Date();
+    }
+  } else {
+    date = new Date();
+  }
+
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Calcula a diferença de dias entre duas datas (YYYY-MM-DD).
  * Se data2 não for informada, usa Hoje.
  */
@@ -52,33 +75,24 @@ export function getDaysDifference(dateStr?: string, targetDateStr?: string): num
  * 'atrasado': a data de follow-up passou e ainda não foi realizado
  * 'futuro': agendado para data futura
  * 'sem_followup': sem data agendada
- *
- * Regras automáticas:
- * - 'nao_contatado', 'fechado', 'arquivado' → sem follow-up
- * - 'contatado_aguardando' ou 'em_conversa' sem dataFollowUp:
- *   calcula automaticamente pela data do 1º contato (3+ dias = atrasado)
  */
 export function getFollowUpStatus(
   dataFollowUp?: string,
   statusLead?: string,
   data1Contato?: string
 ): 'hoje' | 'atrasado' | 'futuro' | 'sem_followup' {
-  // Statuses que nunca geram alerta de follow-up
   if (statusLead === 'nao_contatado' || statusLead === 'fechado' || statusLead === 'arquivado') {
     return 'sem_followup';
   }
 
   const todayStr = getTodayString();
 
-  // Se tem data de follow-up manual definida, usa ela
   if (dataFollowUp) {
     if (dataFollowUp === todayStr) return 'hoje';
     if (dataFollowUp < todayStr) return 'atrasado';
     return 'futuro';
   }
 
-  // Follow-up automático para leads aguardando resposta ou em conversa sem data manual:
-  // Se passaram 3+ dias desde o 1º contato, considera atrasado
   if (
     (statusLead === 'contatado_aguardando' || statusLead === 'em_conversa') &&
     data1Contato
