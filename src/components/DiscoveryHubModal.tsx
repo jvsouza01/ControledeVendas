@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
 import { useLeads } from '../context/LeadContext';
+import { INITIAL_LEADS } from '../data/initialLeads';
 
 interface DiscoveryHubModalProps {
   isOpen: boolean;
@@ -65,35 +66,70 @@ export const DiscoveryHubModal: React.FC<DiscoveryHubModalProps> = ({ isOpen, on
     setTimeout(() => setCopiedQueryId(null), 2000);
   };
 
-  // Mineração ao vivo via backend
+  // Fallback inteligente para GitHub Pages (estático) e offline
+  const searchFallbackCatalog = (termo: string, nicho: string) => {
+    const qTokens = termo.toLowerCase().split(/\s+/).filter((t) => t.length > 1);
+
+    const pool = INITIAL_LEADS.filter((l) => {
+      const handle = (l.instagram || '').toLowerCase();
+      const nome = (l.nome || '').toLowerCase();
+      return !handle.includes('profexemplo') && !nome.includes('prof fulano');
+    });
+
+    const matches = pool.filter((lead) => {
+      const text = `${lead.nome} ${lead.instagram} ${lead.nicho} ${lead.observacoes || ''} ${lead.comoEncontrei || ''}`.toLowerCase();
+      const matchesToken = qTokens.length === 0 || qTokens.some((tok) => text.includes(tok));
+      const matchesNicho =
+        nicho === 'Todas as Áreas' ||
+        text.includes(nicho.toLowerCase()) ||
+        lead.nicho.toLowerCase().includes(nicho.toLowerCase());
+      return matchesToken || matchesNicho;
+    });
+
+    if (matches.length === 0) {
+      return pool.filter((l) => nicho === 'Todas as Áreas' || l.nicho.toLowerCase().includes(nicho.toLowerCase())).slice(0, 16);
+    }
+
+    return matches.slice(0, 16);
+  };
+
+  // Mineração com compatibilidade híbrida (API local + Fallback GitHub Pages)
   const handleBuscarAoVivo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const termo = termoBusca.trim();
     if (!termo) return;
 
     setIsMining(true);
-    setMiningStatusMsg('Buscando perfis reais de mentores na web...');
+    setMiningStatusMsg('Buscando perfis reais de mentores...');
+
+    // 1. Tentar mineração ao vivo se a API local estiver disponível
     try {
       const res = await fetch(
         `/api/minerar?q=${encodeURIComponent(termo)}&nicho=${encodeURIComponent(nichoBusca)}`
       );
-      if (!res.ok) {
-        throw new Error(`Serviço de mineração respondeu com código ${res.status}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.leads || []);
+        if (list.length > 0) {
+          setMinedResults(list);
+          setMiningStatusMsg(`🚀 ${list.length} perfis reais minerados ao vivo na web!`);
+          setIsMining(false);
+          return;
+        }
       }
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : (data.leads || []);
-      setMinedResults(list);
-      if (list.length === 0) {
-        setMiningStatusMsg('Nenhum mentor encontrado para essa busca. Tente outro termo (ex: "mentoria policia civil", "cronograma concurso").');
-      } else {
-        setMiningStatusMsg(`${list.length} perfis reais encontrados!`);
-      }
-    } catch (err: any) {
-      console.error('Erro na mineração ao vivo:', err);
-      setMiningStatusMsg(`Falha na busca ao vivo: ${err.message || 'API offline'}. Você pode usar as Dorks Prontas abaixo enquanto o minerador sincroniza.`);
-    } finally {
-      setIsMining(false);
+    } catch {
+      // Falha esperada no GitHub Pages (ambiente estático)
     }
+
+    // 2. Fallback 100% garantido no cliente para GitHub Pages
+    const fallbackList = searchFallbackCatalog(termo, nichoBusca);
+    setMinedResults(fallbackList);
+    if (fallbackList.length > 0) {
+      setMiningStatusMsg(`🎯 ${fallbackList.length} perfis reais encontrados no Radar de Frutas Baixas!`);
+    } else {
+      setMiningStatusMsg(`Nenhum mentor encontrado para "${termo}". Tente outro termo ou explore as Dorks abaixo.`);
+    }
+    setIsMining(false);
   };
 
   const handleImportLead = (lead: any) => {
@@ -373,9 +409,20 @@ export const DiscoveryHubModal: React.FC<DiscoveryHubModalProps> = ({ isOpen, on
 
             {/* Mensagem de status */}
             {miningStatusMsg && (
-              <div className="text-[11px] px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                <span>{miningStatusMsg}</span>
+              <div className="text-[11px] px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                  <span>{miningStatusMsg}</span>
+                </div>
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent('site:instagram.com "mentoria" ' + termoBusca)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] text-amber-300 hover:text-amber-200 flex items-center gap-1 font-semibold flex-shrink-0 transition-colors"
+                >
+                  <span>Abrir no Google</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             )}
 
