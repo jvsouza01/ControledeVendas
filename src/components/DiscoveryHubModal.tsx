@@ -200,55 +200,64 @@ export const DiscoveryHubModal: React.FC<DiscoveryHubModalProps> = ({ isOpen, on
   
   // Meta Ads Library com filtro Brasil, Todos os Anúncios e busca pelo nicho
   const getMetaAdsUrl = () => {
-    const metaTerm = selectedArea === 'Todas as Áreas' ? 'mentoria concurso' : `mentoria ${selectedArea.toLowerCase()}`;
+    const metaTerm = selectedArea === 'Todas as Áreas' ? 'mentoria individual concurso' : `mentoria individual ${selectedArea.toLowerCase()}`;
     return `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(metaTerm)}&search_type=keyword_unordered&media_type=all`;
   };
 
   const DORKS: DorkItem[] = [
     {
-      id: 'kiwify_hotmart',
-      canal: 'checkout',
-      title: '🔥 Checkouts Kiwify & Hotmart',
-      description: 'Encontra páginas de checkout e vendas de mentoria e cronogramas que expõem WhatsApp ou Instagram do mentor.',
-      query: `site:kiwify.com.br OR site:hotmart.com "mentoria" ${currentNicheTerm} ("instagram.com" OR "wa.me")`,
-      url: googleSearchUrl(`site:kiwify.com.br OR site:hotmart.com "mentoria" ${currentNicheTerm} ("instagram.com" OR "wa.me")`),
-      badge: 'Alta Conversão',
+      id: 'micro_mentores_sem_mil',
+      canal: 'instagram',
+      title: '🌱 Caçador de Micro-Mentores (Filtro 500 a 9k seg)',
+      description: 'Usa a trava matemática -"mil seguidores" do Google. Perfis grandes exibem "45 mil seguidores"; perfis pequenos exibem "1.420 seguidores". Elimina 100% dos tubarões e cursinhos.',
+      query: `site:instagram.com "seguidores" -"mil seguidores" ("mentoria individual" OR "acompanhamento individual" OR "cronograma personalizado") ${currentNicheTerm} -inurl:/p/ -inurl:/reel/`,
+      url: googleSearchUrl(`site:instagram.com "seguidores" -"mil seguidores" ("mentoria individual" OR "acompanhamento individual" OR "cronograma personalizado") ${currentNicheTerm} -inurl:/p/ -inurl:/reel/`),
+      badge: 'Exclusivo 500-9k seg',
     },
     {
-      id: 'linktree_beacons',
+      id: 'canva_site',
+      canal: 'checkout',
+      title: '🎨 Mentores com Página no Canva (my.canva.site)',
+      description: 'Quem cria página de vendas no Canva gratuito é o perfil perfeito da Fruta Baixa: mentor solo, sem plataforma e que gerencia tudo manualmente na planilha/PDF.',
+      query: `site:my.canva.site ("mentoria" OR "cronograma" OR "edital verticalizado") ${currentNicheTerm}`,
+      url: googleSearchUrl(`site:my.canva.site ("mentoria" OR "cronograma" OR "edital verticalizado") ${currentNicheTerm}`),
+      badge: '100% Solo / Sem Plataforma',
+    },
+    {
+      id: 'linktree_whatsapp',
       canal: 'linktree',
-      title: '🔗 Bios Linktree & Beacons.ai',
-      description: 'Mapeia árvores de links de mentores independentes com botões de mentoria, cronograma, WhatsApp e Direct.',
-      query: `site:linktr.ee OR site:beacons.ai "mentoria" ${currentNicheTerm} "instagram.com"`,
-      url: googleSearchUrl(`site:linktr.ee OR site:beacons.ai "mentoria" ${currentNicheTerm} "instagram.com"`),
-      badge: 'Contato Direto',
+      title: '📲 WhatsApp Direto (Linktree, Beacons, Bio.site)',
+      description: 'Mapeia árvores de links que apontam para atendimento direto no WhatsApp pessoal do mentor para fechar turmas reduzidas.',
+      query: `(site:linktr.ee OR site:beacons.ai OR site:bio.site) ("mentoria individual" OR "cronograma" OR "edital verticalizado") ${currentNicheTerm}`,
+      url: googleSearchUrl(`(site:linktr.ee OR site:beacons.ai OR site:bio.site) ("mentoria individual" OR "cronograma" OR "edital verticalizado") ${currentNicheTerm}`),
+      badge: 'WhatsApp Direto',
+    },
+    {
+      id: 'kiwify_solo',
+      canal: 'checkout',
+      title: '🛒 Checkouts Kiwify & Hotmart de Mentores Solo',
+      description: 'Páginas de pagamento onde o mentor independente vende seu acompanhamento individual ou planilha e expõe o WhatsApp/Instagram para suporte.',
+      query: `(site:kiwify.com.br OR site:hotmart.com) ("mentoria individual" OR "cronograma personalizado" OR "planilha de estudos") ${currentNicheTerm} ("wa.me" OR "instagram.com")`,
+      url: googleSearchUrl(`(site:kiwify.com.br OR site:hotmart.com) ("mentoria individual" OR "cronograma personalizado" OR "planilha de estudos") ${currentNicheTerm} ("wa.me" OR "instagram.com")`),
+      badge: 'Vende sem Plataforma',
+    },
+    {
+      id: 'regionais_municipais',
+      canal: 'instagram',
+      title: '🎯 Editais Regionais & Municipais (GCM, Penal, PM Local)',
+      description: 'Editais locais onde os cursinhos nacionais não atuam e os mentores locais reinam sozinhos em turmas de 10 a 30 alunos.',
+      query: `site:instagram.com "seguidores" -"mil seguidores" ("mentoria" OR "cronograma") ("GCM" OR "guarda municipal" OR "policia penal" OR "prefeitura") -inurl:/p/ -inurl:/reel/`,
+      url: googleSearchUrl(`site:instagram.com "seguidores" -"mil seguidores" ("mentoria" OR "cronograma") ("GCM" OR "guarda municipal" OR "policia penal" OR "prefeitura") -inurl:/p/ -inurl:/reel/`),
+      badge: 'Zero Concorrência',
     },
     {
       id: 'meta_ads',
       canal: 'meta_ads',
-      title: '💰 Meta Ads Library (Anúncios Ativos)',
-      description: 'Abre a Biblioteca de Anúncios do Instagram/Facebook buscando mentores que estão investindo em tráfego pago hoje.',
-      query: `Anúncios ativos no Brasil: "mentoria ${selectedArea}"`,
+      title: '💰 Anúncios Ativos no Instagram (Pequenos Investidores)',
+      description: 'Abre a Biblioteca de Anúncios do Meta filtrando mentores que estão rodando anúncios para atrair alunos no Direct.',
+      query: `Anúncios ativos no Brasil: "mentoria individual ${selectedArea}"`,
       url: getMetaAdsUrl(),
-      badge: 'Investindo em Anúncios',
-    },
-    {
-      id: 'instagram_filtrado',
-      canal: 'instagram',
-      title: '📸 Instagram Filtrado (Anti-Studygram)',
-      description: 'Busca biografias de mentores de concursos eliminando grandes cursinhos e studygrams que não vendem nada.',
-      query: `site:instagram.com ("mentoria" OR "cronograma de estudos") ${currentNicheTerm} -estrategia -gran -alfacon -direcao -qconcursos -ceisc`,
-      url: googleSearchUrl(`site:instagram.com ("mentoria" OR "cronograma de estudos") ${currentNicheTerm} -estrategia -gran -alfacon -direcao -qconcursos -ceisc`),
-      badge: 'Anti-Gigantes',
-    },
-    {
-      id: 'telegram_youtube',
-      canal: 'telegram_youtube',
-      title: '✈️ YouTube & Telegram de Mentores',
-      description: 'Acha canais do YouTube e grupos do Telegram de pequenos mentores que deixam o link de mentoria na descrição.',
-      query: `site:youtube.com "mentoria" ${currentNicheTerm} ("instagram.com" OR "wa.me" OR "kiwify")`,
-      url: googleSearchUrl(`site:youtube.com "mentoria" ${currentNicheTerm} ("instagram.com" OR "wa.me" OR "kiwify")`),
-      badge: 'Autoridade Local',
+      badge: 'Tráfego Pago Ativo',
     },
   ];
 
@@ -518,20 +527,61 @@ export const DiscoveryHubModal: React.FC<DiscoveryHubModalProps> = ({ isOpen, on
             )}
           </div>
 
+          {/* SEÇÃO NOVO: CONCURSOS REGIONAIS / MUNICIPAIS (ONDE NÃO TEM TUBARÃO GRANDE) */}
+          <div className="bg-gradient-to-r from-indigo-50/80 via-white to-slate-50 border border-indigo-200/90 rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+                  🎯 Editais Regionais & Municipais (Zero Concorrência de Grandes Cursinhos)
+                </span>
+                <span className="text-[10px] bg-indigo-100 text-indigo-800 font-semibold px-2 py-0.5 rounded-full border border-indigo-200">
+                  Oceano Azul de Frutas Baixas
+                </span>
+              </div>
+            </div>
+            <p className="text-[11px] text-indigo-900/80">
+              Nesses concursos locais e guardas municipais, grandes cursinhos não criam turmas específicas. Os mentores aprovados locais atendem sozinhos turmas de 10 a 30 alunos via WhatsApp e planilha:
+            </p>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                { label: '🛡️ GCM / Guarda Municipal', q: 'mentoria gcm guarda municipal', n: 'Carreiras Policiais' },
+                { label: '🔒 Polícia Penal Estadual', q: 'mentoria policia penal', n: 'Carreiras Policiais' },
+                { label: '👮 PM Estadual (PE/BA/CE/PB/MG)', q: 'mentoria soldado pm', n: 'Carreiras Policiais' },
+                { label: '🏛️ Câmara & Prefeitura Municipal', q: 'mentoria concurso prefeitura', n: 'Administrativo / INSS' },
+                { label: '⚖️ TJ & TRT Estadual', q: 'mentoria escrevente tj', n: 'Tribunais / Jurídica' },
+                { label: '🏥 EBSERH & Enfermagem', q: 'mentoria enfermeiro ebserh', n: 'Saúde / Enfermagem' },
+                { label: '📚 SEDUC / Professores', q: 'mentoria professor seduc', n: 'Educação / Pedagogia' },
+              ].map((reg) => (
+                <button
+                  key={reg.label}
+                  type="button"
+                  onClick={() => {
+                    setTermoBusca(reg.q);
+                    setNichoBusca(reg.n);
+                    handleBuscarAoVivo();
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-600 hover:text-white text-slate-800 border border-slate-200 hover:border-indigo-600 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{reg.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* SEÇÃO 2: DICAS PRÁTICAS */}
           <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3.5 flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="text-xs text-amber-900 space-y-1">
-              <span className="font-bold text-amber-950">Como validar uma "Fruta Baixa" em 5 segundos no Instagram:</span>
+              <span className="font-bold text-amber-950">Por que essas Dorks só trazem Micro-Mentores reais:</span>
               <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px] text-amber-800">
-                <li className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
-                  <strong>👤 1.5k a 30k seguidores:</strong> O próprio mentor cuida e responde os Directs pessoalmente.
+                <li className="bg-white/80 p-2.5 rounded-lg border border-amber-200/60">
+                  <strong>🌱 Trava -"mil seguidores":</strong> No Google em português, contas com mais de 10k aparecem como "45 mil seguidores", enquanto contas de 500 a 9k aparecem como "1.420 seguidores". O filtro elimina 100% dos tubarões.
                 </li>
-                <li className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
-                  <strong>🛒 Vende na Kiwify/Hotmart:</strong> Entrega cronogramas em planilha/PDF ou mentoria sem plataforma própria.
+                <li className="bg-white/80 p-2.5 rounded-lg border border-amber-200/60">
+                  <strong>🎨 Rastros Canva & Linktree:</strong> Usam páginas grátis no <code>my.canva.site</code> e WhatsApp direto porque não pagam plataformas caras de alunos.
                 </li>
-                <li className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
-                  <strong>🎯 Dor imediata:</strong> Sofre para cobrar, gerenciar alunos manualmente e enviar simulados em PDF.
+                <li className="bg-white/80 p-2.5 rounded-lg border border-amber-200/60">
+                  <strong>🎯 Dor Imediata:</strong> Fazem controle de alunos na planilha e sofrem para enviar simulados e cronogramas manualmente. São os clientes mais fáceis de fechar.
                 </li>
               </ul>
             </div>

@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
+import { getMicroMentorBadge } from '../utils/leadUtils';
 
 const COLUMNS: { id: LeadStatus; title: string }[] = [
   { id: 'nao_contatado', title: 'Não Contatados' },
@@ -118,6 +119,7 @@ const KanbanCard: React.FC<{ lead: Lead }> = ({ lead }) => {
   const daysInfo = formatDaysAgoText(lead.data1Contato);
   const followUpStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
   const cleanHandle = (lead.instagram || '').replace('@', '').trim();
+  const microMentor = getMicroMentorBadge(lead);
 
   const getPriorityBadge = (p: Lead['prioridade']) => {
     switch (p) {
@@ -169,13 +171,27 @@ const KanbanCard: React.FC<{ lead: Lead }> = ({ lead }) => {
       onClick={() => setSelectedLead(lead)}
       className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-lg p-3 shadow-xs hover:shadow-sm transition-all group relative cursor-pointer"
     >
-      {/* Badge de Destaque: Novo Lead Minerado */}
-      {lead.id.startsWith('fb_') && (
-        <div className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
-          <Sparkles className="w-3 h-3 text-emerald-600 animate-pulse" />
-          <span>✨ NOVO LEAD MINERADO</span>
-        </div>
-      )}
+      {/* Badges de Destaque no Topo do Card */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+        {lead.id.startsWith('fb_') && (
+          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
+            <Sparkles className="w-2.5 h-2.5 text-emerald-600 animate-pulse" />
+            <span>✨ NOVO LEAD MINERADO</span>
+          </div>
+        )}
+
+        {microMentor && (
+          <div
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold shadow-2xs ${
+              microMentor.isSmall
+                ? 'bg-cyan-50 text-cyan-800 border border-cyan-200'
+                : 'bg-slate-100 text-slate-600 border border-slate-200'
+            }`}
+          >
+            <span>{microMentor.text}</span>
+          </div>
+        )}
+      </div>
 
       {/* Topo do Card: Nome e Ações */}
       <div className="flex items-start justify-between gap-2">

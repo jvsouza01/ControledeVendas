@@ -38,9 +38,55 @@ const STORAGE_KEY = 'crm_prospeccao_vendas_leads_v1';
 // Normalizador seguro de handle
 const normalizeHandle = (h?: string) => (h || '').replace(/[@\s]/g, '').trim().toLowerCase();
 
-// Blocklist de perfis famosos e dummy a serem eliminados INCONDICIONALMENTE
-const EXCLUDED_HANDLES = new Set([
+// Blocklist incondicional de perfis mortos ou falsos (não abrem no Instagram)
+const DEAD_OR_DUMMY_HANDLES = new Set([
   'profexemplo',
+  // 16 Dead handles auditados via HTTP (não existem / erro 404 / bloqueados)
+  'eduardodefaveri',
+  'rumo01aprovacao',
+  'rodrigocavalcantiprof',
+  'gabrielcosta.trt',
+  'andradedossantosbento',
+  'joaoduque_defensor',
+  'metodorech',
+  'vandinara.franco',
+  'profandrefantoni',
+  'mentoriafiscal',
+  'douglastaniguchi',
+  'prof.alanmores',
+  'saudeaprovada',
+  'professora.danielle',
+  'profmazziotti',
+  'foconasargenta',
+]);
+
+// Perfis famosos (> 25k seguidores) a serem removidos se não foram contatados (preservando contatos do usuário)
+const FAMOUS_HANDLES = new Set([
+  // 23 Famosos auditados via HTTP (>25k a 596k seguidores)
+  'ayresbarros',
+  'joaolisboa_concursos',
+  'pmminas',
+  'erickbiaggi_',
+  'manualdomike',
+  'prof.rafaelvalle',
+  'pfem.anakarolina',
+  'fernandococito',
+  'fzconcursos',
+  'irmaospolicia',
+  '_brunaconcursos',
+  'isaqueconcursos_',
+  'vocenadefensoria',
+  'cursordpoficial',
+  'mentoriadeleiseca',
+  'magistrarcursos',
+  'lucasoprimoconcursado',
+  'professorsamuelgrehs',
+  'enfermeiroaprovado',
+  'pedagogiaparaconcurso',
+  'triunfomilitar',
+  'gabaritandoredacao',
+  'profraphaelreis',
+  // Famosos adicionais
   'profbrunobezerra',
   'professora_fabianafirmino',
   'profarthurlima',
@@ -53,12 +99,22 @@ const EXCLUDED_HANDLES = new Set([
   'concursopmoficial',
 ]);
 
-const isExcludedLead = (l: { instagram?: string; nome?: string }): boolean => {
+const isDeadOrDummyLead = (l: { instagram?: string; nome?: string }): boolean => {
   const handle = normalizeHandle(l.instagram);
   const name = (l.nome || '').trim().toLowerCase();
-  if (EXCLUDED_HANDLES.has(handle)) return true;
+  if (DEAD_OR_DUMMY_HANDLES.has(handle)) return true;
   if (handle === 'profexemplo' || handle.includes('profexemplo')) return true;
   if (name === 'prof fulano' || name === 'prof. fulano' || name.includes('prof fulano')) return true;
+  return false;
+};
+
+const isExcludedLead = (l: { instagram?: string; nome?: string; status?: string }): boolean => {
+  if (isDeadOrDummyLead(l)) return true;
+  const handle = normalizeHandle(l.instagram);
+  if (FAMOUS_HANDLES.has(handle)) {
+    // Purga se não foi contatado (preserva se o usuário já engajou/alterou o status)
+    return !l.status || l.status === 'nao_contatado';
+  }
   return false;
 };
 

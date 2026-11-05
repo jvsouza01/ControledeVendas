@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { InstagramIcon } from './InstagramIcon';
+import { getMicroMentorBadge } from '../utils/leadUtils';
 
 export const TableView: React.FC = () => {
   const { filteredLeads, updateLeadStatus, updateLead, deleteLead, setEditingLead, setIsModalOpen, setSelectedLead } = useLeads();
@@ -171,6 +172,7 @@ export const TableView: React.FC = () => {
                 const daysInfo = formatDaysAgoText(lead.data1Contato);
                 const followStatus = getFollowUpStatus(lead.dataFollowUp, lead.status, lead.data1Contato);
                 const cleanHandle = (lead.instagram || '').replace('@', '').trim();
+                const microMentor = getMicroMentorBadge(lead);
 
                 return (
                   <tr
@@ -178,15 +180,26 @@ export const TableView: React.FC = () => {
                     onClick={() => setSelectedLead(lead)}
                     className="hover:bg-slate-50/70 transition-colors cursor-pointer"
                   >
-                    <td className="py-3 px-4 font-semibold text-slate-900 max-w-[220px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate font-semibold hover:text-indigo-600 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-slate-900 max-w-[260px]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="truncate font-semibold hover:text-indigo-600 transition-colors max-w-[150px]">
                           {lead.nome || cleanHandle || 'Lead sem nome'}
                         </span>
                         {lead.id.startsWith('fb_') && (
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shadow-2xs flex-shrink-0">
                             <Sparkles className="w-2.5 h-2.5 text-emerald-600 animate-pulse" />
-                            ✨ NOVO MINERADO
+                            ✨ NOVO
+                          </span>
+                        )}
+                        {microMentor && (
+                          <span
+                            className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded shadow-2xs flex-shrink-0 ${
+                              microMentor.isSmall
+                                ? 'bg-cyan-50 text-cyan-800 border border-cyan-200'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            }`}
+                          >
+                            {microMentor.text}
                           </span>
                         )}
                       </div>
